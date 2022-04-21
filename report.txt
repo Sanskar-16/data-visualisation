@@ -1,0 +1,16 @@
+- Categorical data can be
+
+	- nominal, qualitative
+	- ordinal
+
+  For visualization, the main difference is that ordinal data suggests a particular display order.
+
+  Purely categorical data can come in a range of formats. The most common are
+
+	- raw data: individual observations;
+	- aggregated data: counts for each unique combination of levels
+	- cross-tabulated data
+
+
+- added sections to the the r script
+- 
