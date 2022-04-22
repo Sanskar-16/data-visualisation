@@ -13,4 +13,9 @@
 
 
 - added sections to the the r script
+
+- edit the rmd file in vscode. much easier.
+
+- knit it in rstudio if not in vscode, again much easier.
+
 - 
