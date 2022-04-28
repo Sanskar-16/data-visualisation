@@ -1,22 +1,44 @@
 ---
-title: "report"
+title: "Final report"
 output: html_document
-date: '2022-04-17'
+date: '2022-04-28'
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+## Section 1: Loading the data set and libraries
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+Main dataset - data  
+Copy of the dataset used for cleaning - datacopy  
+Final cleaned dataset - df  
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+### Loading the libraries
+```{r message = FALSE, warnings = FALSE}
+# loading the libraries
+library(funModeling)
+library(dplyr)
+library(ggplot2)
+library(ggmosaic)
+library(plotrix)
+library(chron)
+library(corrplot)
 
-```{r cars}
-summary(cars)
 ```
+### Loading the file
+
+```{r}
+
+data <- read.csv("37-00049_UOF-P_2016_prepped.csv")
+```
+
+## Section 2: Cleaning the dataset  
+## Section 3: Exploring the data set after cleaning  
+## Section 4: Exploratory data analysis  
+## Section 5: Geo spatial mapping  
+## Section 6: interpretations  
+## Section 7: Conclusion  
 
 ## Including Plots
 
@@ -27,3 +49,11 @@ plot(pressure)
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+## Trial
+
+Adding new stuff here
+
+```
+{}
+```
