@@ -1,0 +1,272 @@
+---
+title: "MA304: Final report"
+author: "Sanskar Gupta"
+output: html_document
+date: "2022-04-28"
+---
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+## Introduction  
+
+This report covers the data analysis, interpretation of the findings and data visualisation of the data set available [here](https://www.kaggle.com/center-for-policing-equity/data-science-for-good)  
+
+The link to this project can be found on my Github [here](https://github.com/Sanskar-16/data-visualisation)  
+
+## Section 1: Loading the data set and libraries
+
+In the code below, Original dataset is referred to as 'df', Copy of the dataset used for cleaning is referred to as 'datacopy'.  
+
+### Loading the libraries
+```{r message = FALSE, warnings = FALSE}
+# loading the libraries
+library(funModeling)
+library(dplyr)
+library(ggplot2)
+library(plotrix)
+library(chron)
+library(corrplot)
+library(sf)
+library(mapview)
+
+```
+### Loading the file  
+```{r}
+df <- read.csv("37-00049_UOF-P_2016_prepped.csv")
+
+datacopy <- data.frame(df)
+attach(datacopy)
+
+str(datacopy)
+```
+
+## Section 2: Cleaning the dataset  
+### Refactoring Process  
+Initially We remove the extra definition row (row1) at the first index to eliminate redundancy followerd by assigning all the "" and "NULL" to NA for easier manipulation of the data down the road. We then check for missing values by using the is.na() function.
+```{r warnings = FALSE}
+
+datacopy <- datacopy[-c(1),]
+datacopy[datacopy == "NULL"] <- NA
+datacopy[datacopy == ""] <- NA
+
+colSums(sapply(datacopy, is.na))
+```
+Changing the dates to date format
+```{r}
+x_dates <- as.Date(INCIDENT_DATE, "%m/%d/%Y")
+x_dates <- x_dates[-1]
+datacopy$INCIDENT_DATE <- x_dates
+rm(x_dates)
+
+x_dates <- as.Date(OFFICER_HIRE_DATE, "%m/%d/%Y")
+x_dates <- x_dates[-1]
+datacopy$OFFICER_HIRE_DATE <- x_dates
+rm(x_dates)
+```
+Converting the format from character to POSIXlt
+```{r}
+datacopy$INCIDENT_TIME <- strptime(datacopy$INCIDENT_TIME, format = "%H:%M:%S")
+```
+Converting desired variables into numeric
+```{r}
+datacopy$OFFICER_ID <- as.numeric(datacopy$OFFICER_ID)
+
+datacopy$SUBJECT_ID <- as.numeric(datacopy$SUBJECT_ID)
+
+datacopy$OFFICER_YEARS_ON_FORCE <- as.numeric(datacopy$OFFICER_YEARS_ON_FORCE)
+
+datacopy$BEAT <- as.numeric(datacopy$BEAT)
+
+datacopy$SECTOR <- as.numeric(datacopy$SECTOR)
+
+datacopy$REPORTING_AREA <- as.numeric(datacopy$REPORTING_AREA)
+
+datacopy$STREET_NUMBER  <- as.numeric(datacopy$STREET_NUMBER)
+
+datacopy$LOCATION_LATITUDE <- as.numeric(datacopy$LOCATION_LATITUDE)
+
+datacopy$LOCATION_LONGITUDE <- as.numeric(datacopy$LOCATION_LONGITUDE)
+```
+Converting desired variables into factors
+```{r}
+datacopy$OFFICER_GENDER <- as.factor(datacopy$OFFICER_GENDER)
+summary(datacopy$OFFICER_GENDER)
+
+datacopy$OFFICER_RACE <- as.factor(datacopy$OFFICER_RACE)
+summary(datacopy$OFFICER_RACE)
+
+datacopy$SUBJECT_RACE <- as.factor(datacopy$SUBJECT_RACE)
+summary(datacopy$SUBJECT_RACE)
+
+datacopy$SUBJECT_GENDER <- as.factor(datacopy$SUBJECT_GENDER)
+summary(datacopy$SUBJECT_GENDER)
+
+datacopy$OFFICER_INJURY <- as.factor(datacopy$OFFICER_INJURY)
+summary(datacopy$OFFICER_INJURY)
+
+datacopy$SUBJECT_INJURY <- as.factor(datacopy$SUBJECT_INJURY)
+summary(datacopy$SUBJECT_INJURY)
+
+datacopy$OFFICER_HOSPITALIZATION <- as.factor(datacopy$OFFICER_HOSPITALIZATION)
+summary(datacopy$OFFICER_HOSPITALIZATION)
+
+datacopy$SUBJECT_WAS_ARRESTED <- as.factor(datacopy$SUBJECT_WAS_ARRESTED)
+summary(datacopy$SUBJECT_WAS_ARRESTED)
+
+datacopy$SUBJECT_DESCRIPTION <- as.factor(datacopy$SUBJECT_DESCRIPTION)
+summary(datacopy$SUBJECT_DESCRIPTION)
+
+datacopy$DIVISION <- as.factor(datacopy$DIVISION)
+summary(datacopy$DIVISION)
+
+datacopy$LOCATION_DISTRICT <- as.factor(datacopy$LOCATION_DISTRICT)
+summary(datacopy$LOCATION_DISTRICT)
+
+datacopy$STREET_DIRECTION <- as.factor(datacopy$STREET_DIRECTION)
+summary(datacopy$STREET_DIRECTION)
+
+datacopy$STREET_TYPE <- as.factor(datacopy$STREET_TYPE)
+summary(datacopy$STREET_TYPE)
+
+datacopy$INCIDENT_REASON <- as.factor(datacopy$INCIDENT_REASON)
+summary(datacopy$INCIDENT_REASON)
+
+datacopy$REASON_FOR_FORCE <- as.factor(datacopy$REASON_FOR_FORCE)
+summary(datacopy$REASON_FOR_FORCE)
+```
+
+### Removal Process
+We begin by removing useless columns like LOCATION_STATE, LOCATION_CITY as both of those contain a redundant value throughout the dataset. We also remove STREET_DIRECTION from the dataset as it is not of big imporatance with respect to our objective. Using the reassignment we remove the rows which have null values for columns longitude and latitude in the dataset, this makes the plotting process a whole lot smoother. Then using the str() function we compare the original messy dataset with the new clean one, we just obtained after all the peprocessing.
+```{r}
+datacopy <- select(datacopy, -c(LOCATION_STATE, LOCATION_CITY, STREET_DIRECTION))
+
+datacopy <- rename(datacopy, LON = LOCATION_LONGITUDE,
+                   LAT = LOCATION_LATITUDE)
+
+datacopy <- datacopy[-c(4:5, 10:18, 20:35, 37:64),]
+
+str(datacopy)
+str(df)
+```
+
+## Section 3: Exploring the data set after cleaning  
+Splitting the dataset into numerical and categorical variables for efficient plotting
+```{r message = FALSE, warnings = FALSE}
+numericVars <- which(sapply(datacopy, is.numeric))
+numericVarNames <- names(numericVars)
+cat('There are', length(numericVars), 'numeric variables')
+
+catVars <- which(sapply(datacopy, is.factor))
+catVarNames <- names(catVars)
+cat('The are', length(catVars), 'categorical variables')
+
+catVars
+numericVars
+
+cat_df <- subset(datacopy, select = c(5, 6, 9, 11, 13, 14, 15, 17, 18, 23, 24, 27, 31, 32))
+num_df <- subset(datacopy, select = c(4, 8, 12, 20, 21, 22, 25, 29, 30))
+
+plot_num(num_df)
+freq(cat_df)
+```
+
+## Section 4: Exploratory data analysis  
+Plotting the variables as pie charts to visualize the assorted variables
+```{r}
+ggplot(datacopy, aes(x = factor(1), fill = OFFICER_RACE)) +
+  geom_bar(width = 1) +
+  coord_polar("y")
+
+ggplot(datacopy, aes(x = factor(1), fill = OFFICER_GENDER)) +
+  geom_bar(width = 1) +
+  coord_polar("y")
+
+ggplot(datacopy, aes(x = factor(1), fill = SUBJECT_RACE)) +
+  geom_bar(width = 1) +
+  coord_polar("y")
+
+ggplot(datacopy, aes(x = factor(1), fill = SUBJECT_GENDER)) +
+  geom_bar(width = 1) +
+  coord_polar("y")
+```
+Plotting the variables as hue filled bar plots
+```{r}
+ggplot(datacopy) +
+geom_bar(aes(x = OFFICER_YEARS_ON_FORCE)) +
+scale_fill_viridis_d()
+
+ggplot(datacopy) +
+geom_bar(aes(x = SUBJECT_WAS_ARRESTED, fill = SUBJECT_RACE)) +
+scale_fill_viridis_d()
+
+ggplot(datacopy) +
+geom_bar(aes(x = SUBJECT_WAS_ARRESTED, fill = OFFICER_RACE)) +
+scale_fill_viridis_d()
+
+ggplot(datacopy) +
+geom_bar(aes(x = SUBJECT_RACE, fill = SUBJECT_WAS_ARRESTED)) +
+scale_fill_viridis_d()
+
+ggplot(datacopy) +
+geom_bar(aes(x = SUBJECT_WAS_ARRESTED, fill = OFFICER_INJURY)) +
+scale_fill_viridis_d()
+```
+
+## Section 5: Geo spatial mapping  
+Visualising the data based on the longitudinal and latitudinal coordinates and other columns acting as hue (z-axis)  
+```{r}
+str(datacopy)
+
+mapview(datacopy,
+        xcol = "LON",
+        ycol = "LAT",
+        zcol = "DIVISION",
+        crs = 4326,
+        grid = FALSE,
+        map.types = "Stamen.Toner")
+
+mapview(datacopy,
+        xcol = "LON",
+        ycol = "LAT",
+        zcol = "LOCATION_DISTRICT",
+        crs = 4326,
+        grid = FALSE,
+        map.types = "Stamen.Toner")
+
+mapview(datacopy,
+        xcol = "LON",
+        ycol = "LAT",
+        zcol = "OFFICER_RACE",
+        crs = 4326,
+        grid = FALSE,
+        map.types = "Stamen.Toner")
+    
+mapview(datacopy,
+        xcol = "LON",
+        ycol = "LAT",
+        zcol = "STREET_TYPE",
+        crs = 4326,
+        grid = FALSE,
+        map.types = "Stamen.Toner")
+```
+## Section 6: Interpretation of the findings
+
+In Section 1 we load the data set, save a copy of the data to experiment on so that it does not contaminate. For preliminary analysis and checking the dimension and the type of the variables, we use the str() function, that tells us that all the variables are of the datatype character, so we assign proper data types to the variables before any further analysis.
+
+In Section 2, we clean the data set by assigning the right data types to the variables when viewwed using str() function. New kinds of data types like 'Date', 'Time', 'Numeric' and 'Factors' are introduced.
+
+In Section 3, we explore the data set after cleaning and dividing the data set into 2 further data frames based on their type - categorical and numerical data. Using these variables and the 'funmodelling' library, we obtain multiple insightful plots which plot these very variables against their frequency and also show the percentages. The STREET_TYPE 'St' has quite a lot of crime, maybe deploying a greater number of force on those streets will help reduce the number. Similarly for sector D14 and D2, increased number of officers could impact positively in reduction of crime. As shown in the division plot in preliminary analysis, the central part of Dallas is heavily prone to crime, maybe something could be done in that very region to reduce the same.
+
+In Section 4, we further visualise the variables separately using different charts like pie charts and bar plots. The pie charts are easy to read and informative source of information for quick analysis. 
+
+In Section 5, we plot the map of Dallas, using the longitudes and latitudes provided in the data set. We also plot variables on the map obtained to visualise how different areas differ to each other based on all the other aspects. We also see that quite a lot of subjects were arrested without an officer injury, on further analysis on that we do observe an indication of racial bias again. Further more when SUBJECT_RACE is plotted against SUBJECT_WAS_ARRESTED we observe that however the number of arrests are quite high, the SUBJECT_RACE indicates that the most arrests made were on people of colour confirming the suspicion of a racial bias in the data set.
+
+Also, the plot where OFFICER_RACE is plotted against SUBJECT_RACE, we see a contrast in the number for the white officers. A thing which might help in future could be adding more police officers of colour to the force in turn reducing the racial bias if not eradicating it.
+
+## Section 7: Conclusion  
+
+From all the analysis and visulaisation performed above we notice, that the data hints towards a racial bias when it comes to subject race. That number was greater for people of colour starting from 'SUBJECT_WAS_ARRESTED' and it decreases as we reach OFFICER_RACE. Having more female officers, and officers of colour could really make a difference in the region specifically. It would definitely help in reduction of the bias and eventually crime. Also, from the numerical plot in Section 2 we notice the OFFICER_YEARS_ON_FORCE is negatively skewed meaning most of the officers are new in the department indicating towards a possibility of lack of experience in the officers. 
+
+Lastly, interactive map plots were included to show how the variables 'STREET_TYPE', 'OFFICER_RACE', 'LOCATION_DISTRICT' and 'DIVISION' affected the plotting of the latitudes and longitudes.
+
+Given more time, I would have converted some of the categorical data into numerical useing one-hot encoding to form levels, where they can be distinguished based on the value they hold. This could provide a deeper insight into the data set revealing more trends and interesting patterns.
